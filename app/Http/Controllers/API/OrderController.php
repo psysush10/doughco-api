@@ -25,6 +25,13 @@ class OrderController extends Controller
 
         ]);
 
+        if (!isset($validated['items']) || count($validated['items']) === 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cart is empty'
+            ], 422);
+        }
+
         $order = Order::create([
             'customer_name' => $validated['customer_name'],
             'total_amount' => 0,
