@@ -17,27 +17,25 @@ class OrderController extends Controller
     }
     public function store(Request $request)
     {
-        $items = $request->items;
-        $customerName = $request->customer_name;
+        $validated = $request->validate([
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|integer|min:1',
+            'customer_name' => 'required|string|max:255'
 
-        if (!$items || count($items) === 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No items in order'
-            ], 400);
-        }
+        ]);
 
         $order = Order::create([
-            'customer_name' => $customerName,
+            'customer_name' => $validated['customer_name'],
             'total_amount' => 0,
             'status' => 'completed'
         ]);
 
         $total = 0;
 
-        foreach ($items as $item) {
+        foreach ($validated['items'] as $item) {
 
-            $product = Product::find($item['product_id']);
+            $product = Product::findOrFail($item['product_id']);
 
             if (!$product) {
                 return response()->json([
@@ -49,7 +47,7 @@ class OrderController extends Controller
             if ($product->stock < $item['quantity']) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Out of stock'
+                    'message' => 'Insufficient stock for {$product->name}'
                 ], 400);
             }
 
